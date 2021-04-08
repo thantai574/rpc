@@ -4,7 +4,7 @@
 // 	protoc        v3.9.2
 // source: amv/vaccine.proto
 
-package rpc
+package msg
 
 import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"

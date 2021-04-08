@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"rpc"
+	"rpc/example/rabbit/msg"
 	"rpc/logger"
 	"rpc/rabbitmq"
 )
@@ -17,12 +18,12 @@ func main() {
 
 	irpc = rabbitmq.Instance(ctx, opt, log)
 
-	var res = &rpc.PathogenDTO{}
+	var res = &msg.PathogenDTO{}
 
 	irpc.Publish(ctx, rabbitmq.RabbitMsg{
 		WhereExchange:   "test",
 		WhereRoutingKey: "test",
-		Msg: &rpc.PathogenDTO{
+		Msg: &msg.PathogenDTO{
 			Id:     "1",
 			Name:   "1",
 			Avatar: "2",

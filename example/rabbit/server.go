@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"rpc"
+	"rpc/example/rabbit/msg"
 	"rpc/logger"
 	"rpc/rabbitmq"
 
@@ -21,9 +22,9 @@ func main() {
 		irpc.EventServer(ctx, rabbitmq.RabbitEventServer{
 			WhereExchange:   "test",
 			WhereRoutingKey: "test",
-			WhereFunction: func(context.Context) (o proto.Message, e error) {
-				o = &rpc.PathogenDTO{
-					Id:     "12",
+			Function: func(context.Context) (o proto.Message, e error) {
+				o = &msg.PathogenDTO{
+					Id:     "1231212",
 					Name:   "1",
 					Avatar: "2",
 				}
