@@ -16,7 +16,7 @@ package main
 
 import (
 	"context"
-	"rpc"
+	"github.com/thantai574/rpc"
 	"github.com/thantai574/rpc/example/rabbit/msg"
 	"github.com/thantai574/rpc/logger"
 	"github.com/thantai574/rpc/rabbitmq"
