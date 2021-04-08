@@ -9,7 +9,7 @@ import (
 type RabbitEventServer struct {
 	WhereExchange   string
 	WhereRoutingKey string
-	WhereFunction   func(ctx context.Context) (msg proto.Message, err error)
+	Function        func(ctx context.Context) (msg proto.Message, err error)
 }
 
 func (this RabbitEventServer) GetExchange() string {
@@ -21,7 +21,7 @@ func (this RabbitEventServer) GetRoutingKey() string {
 }
 
 func (this RabbitEventServer) GetRpcServer() func(ctx context.Context) (msg proto.Message, err error) {
-	return this.WhereFunction
+	return this.Function
 }
 
 type RabbitMsg struct {
