@@ -2,7 +2,6 @@ package rabbitmq
 
 import (
 	"context"
-	"fmt"
 	"math/rand"
 	"rpc"
 	"time"
@@ -39,7 +38,7 @@ func (this rabbit) Publish(ctx context.Context, request rpc.RequestMsgRPC) (err 
 	ch, err := this.conn.Channel()
 
 	if err != nil {
-		this.log.Errorw("err-msg-rabbit", err.Error())
+		this.log.Errorw("err-msg-rabbit", "err", err.Error())
 		return
 	}
 	defer ch.Close()
@@ -47,32 +46,46 @@ func (this rabbit) Publish(ctx context.Context, request rpc.RequestMsgRPC) (err 
 	msg_proto, err_encode := proto.Marshal(request.GetMsg())
 
 	if err_encode != nil {
-		this.log.Errorw("err-msg-rabbit", err.Error())
+		this.log.Errorw("err-msg-rabbit", "err", err.Error())
 		return
 	}
 	corrId := randomString(32)
 
+	q, err := ch.QueueDeclare(
+		"",    // name
+		false, // durable
+		false, // delete when unused
+		true,  // exclusive
+		false, // noWait
+		nil,   // arguments
+	)
 	publish_data := amqp.Publishing{
 		ContentType:   "text/plain",
 		CorrelationId: corrId,
 		Body:          msg_proto,
+		ReplyTo:       q.Name,
 	}
-	var msgs <-chan amqp.Delivery
-	if request.HaveReply() {
-		q, err := ch.QueueDeclare(
-			"",    // name
-			false, // durable
-			false, // delete when unused
-			true,  // exclusive
-			false, // noWait
-			nil,   // arguments
-		)
-		if err != nil {
-			this.log.Errorw("err-msg-rabbit", err.Error())
-			return err
-		}
 
-		msgs, err = ch.Consume(
+	if err != nil {
+		this.log.Errorw("err-msg-rabbit", "err", err.Error())
+		return
+	}
+
+	err = ch.Publish(
+		request.GetExchange(),   // exchange
+		request.GetRoutingKey(), // routing key
+		false,                   // mandatory
+		false,                   // immediate
+		publish_data,
+	)
+
+	if err != nil {
+		this.log.Errorw("err-msg-rabbit", "err", err.Error())
+		return
+	}
+
+	if request.HaveReply() {
+		msgs, _ := ch.Consume(
 			q.Name, // queue
 			"",     // consumer
 			true,   // auto-ack
@@ -81,33 +94,17 @@ func (this rabbit) Publish(ctx context.Context, request rpc.RequestMsgRPC) (err 
 			false,  // no-wait
 			nil,    // args
 		)
-		publish_data.ReplyTo = q.Name
 
 		if err != nil {
-			this.log.Errorw("err-msg-rabbit", err.Error())
-			return err
+			this.log.Errorw("err-msg-rabbit", "err", err.Error())
+			return
 		}
 
-	}
-
-	err = ch.Publish(
-		"logs",       // exchange
-		"rpc_server", // routing key
-		false,        // mandatory
-		false,        // immediate
-		publish_data,
-	)
-
-	if err != nil {
-		this.log.Errorw("err-msg-rabbit", err.Error())
-		return
-	}
-
-	if request.HaveReply() {
 		select {
 		case d, ok := <-msgs:
+			this.log.Infow("msg", "msg", d)
 			if ok {
-				fmt.Println(string(d.Body))
+				proto.Unmarshal(d.Body, request.GetReplyMsg())
 				return
 			}
 		case <-time.After(time.Minute * 10):
@@ -126,7 +123,7 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 	ch, err := this.conn.Channel()
 	this.log.Infow("starting EventServer")
 	if err != nil {
-		this.log.Infow("err-msg-rabbit", err.Error())
+		this.log.Errorw("err-msg-rabbit", "err", err.Error())
 		return
 	}
 
@@ -148,7 +145,7 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 	)
 
 	if err != nil {
-		this.log.Infow("err-msg-rabbit", err.Error())
+		this.log.Infow("err-msg-rabbit", "err", err.Error())
 		return
 	}
 
@@ -163,7 +160,7 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 	)
 
 	if err != nil {
-		this.log.Infow("err-msg-rabbit", err.Error())
+		this.log.Infow("err-msg-rabbit", "err", err.Error())
 		return
 	}
 	err = ch.QueueBind(
@@ -185,18 +182,19 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 	)
 
 	if err != nil {
-		this.log.Infow("err-msg-rabbit", err.Error())
+		this.log.Infow("err-msg-rabbit", "err", err.Error())
 		return
 	}
 
-	go func() {
+	func() {
 		defer func() {
 			if r := recover(); r != nil {
-				this.log.Infow("Recovered in f", r)
+				this.log.Infow("Recovered in f", "recovery", r)
 			}
 		}()
 
 		for d := range msgs {
+			this.log.Infow("msg-rabbit", "msg", d)
 			var msg proto.Message
 
 			msg, err = request.GetRpcServer()(ctx)
@@ -208,7 +206,7 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 					"",        // exchange
 					d.ReplyTo, // routing key
 					false,     // mandatory
-					true,      // immediate
+					false,     // immediate
 					amqp.Publishing{
 						ContentType:   "text/plain",
 						CorrelationId: d.CorrelationId,
@@ -229,7 +227,7 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 func Instance(ctx context.Context, opt rpc.Options, logger rpc.ILogger) rabbit {
 	conn, err := amqp.Dial(opt.URIConnection())
 	if err != nil {
-		logger.Infow("err-msg-rabbit", err.Error())
+		logger.Infow("err-msg-rabbit", "err", err.Error())
 	}
 	return rabbit{opt, logger, conn}
 }

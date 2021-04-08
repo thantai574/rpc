@@ -28,6 +28,7 @@ type RabbitMsg struct {
 	WhereExchange   string
 	WhereRoutingKey string
 	Msg             proto.Message
+	ReplyMsg        proto.Message // Pointer
 	Reply           bool
 }
 
@@ -45,4 +46,7 @@ func (this RabbitMsg) HaveReply() bool {
 
 func (this RabbitMsg) GetMsg() proto.Message {
 	return this.Msg
+}
+func (this RabbitMsg) GetReplyMsg() proto.Message {
+	return this.ReplyMsg
 }

@@ -1,108 +1,35 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"strconv"
+	"context"
+	"rpc"
+	"rpc/logger"
+	"rpc/rabbitmq"
 
-	"github.com/streadway/amqp"
+	"github.com/golang/protobuf/proto"
 )
 
-func failOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-	}
-}
-
-func fib(n int) int {
-	if n == 0 {
-		return 0
-	} else if n == 1 {
-		return 1
-	} else {
-		return fib(n-1) + fib(n-2)
-	}
-}
-
 func main() {
-	conn, err := amqp.Dial("amqp://admin:admin@localhost:5672/")
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
+	ctx := context.Background()
+	opt := rpc.RabbitURI("amqp://admin:admin@localhost:5672/")
 
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	q, err := ch.QueueDeclare(
-		"res", // name
-		false, // durable
-		false, // delete when unused
-		false, // exclusive
-		false, // no-wait
-		nil,   // arguments
-	)
-	failOnError(err, "Failed to declare a queue")
-
-	err = ch.Qos(
-		1,     // prefetch count
-		0,     // prefetch size
-		false, // global
-	)
-	failOnError(err, "Failed to set QoS")
-
-	err = ch.ExchangeDeclare(
-		"logs",   // name
-		"direct", // type
-		true,     // durable
-		false,    // auto-deleted
-		false,    // internal
-		false,    // no-wait
-		nil,      // arguments
-	)
-	fmt.Println("queue name", q.Name)
-	err = ch.QueueBind(
-		q.Name,       // queue name
-		"rpc_server", // routing key
-		"logs",       // exchange
-		false,
-		nil,
-	)
-
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		false,  // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
-	failOnError(err, "Failed to register a consumer")
-
-	forever := make(chan bool)
+	log, _ := logger.NewLogger("test", "production")
+	var irpc rpc.Irpc
+	irpc = rabbitmq.Instance(ctx, opt, log)
 
 	go func() {
-		for d := range msgs {
-			n, err := strconv.Atoi(string(d.Body))
-			failOnError(err, "Failed to convert body to integer")
-
-			log.Printf(" [.] fib(%d)", n)
-			err = ch.Publish(
-				"",        // exchange
-				d.ReplyTo, // routing key
-				false,     // mandatory
-				false,     // immediate
-				amqp.Publishing{
-					ContentType:   "text/plain",
-					CorrelationId: d.CorrelationId,
-					Body:          []byte("testst"),
-				})
-			failOnError(err, "Failed to publish a message")
-
-			d.Ack(false)
-		}
+		irpc.EventServer(ctx, rabbitmq.RabbitEventServer{
+			WhereExchange:   "test",
+			WhereRoutingKey: "test",
+			WhereFunction: func(context.Context) (o proto.Message, e error) {
+				o = &rpc.PathogenDTO{
+					Id:     "12",
+					Name:   "1",
+					Avatar: "2",
+				}
+				return
+			},
+		})
 	}()
-
-	log.Printf(" [*] Awaiting RPC requests")
-	<-forever
+	select {}
 }

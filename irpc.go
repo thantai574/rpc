@@ -16,6 +16,7 @@ type RequestMsgRPC interface {
 	GetExchange() string
 	GetRoutingKey() string
 	GetMsg() proto.Message
+	GetReplyMsg() proto.Message
 	HaveReply() bool
 }
 
