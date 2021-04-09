@@ -226,7 +226,7 @@ func (this rabbit) EventServer(ctx context.Context, request rpc.RequestRPC) (err
 	}
 }
 
-func Instance(ctx context.Context, opt rpc.Options, logger rpc.ILogger) rabbit {
+func Instance(ctx context.Context, opt rpc.Options, logger rpc.ILogger) rpc.Irpc {
 	conn, err := amqp.Dial(opt.URIConnection())
 	if err != nil {
 		logger.Infow("err-msg-rabbit", "err", err.Error())
