@@ -24,6 +24,7 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+
 func main() {
 	ctx := context.Background()
 	opt := rpc.RabbitURI("amqp://admin:admin@localhost:5672/")
