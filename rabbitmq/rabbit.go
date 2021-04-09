@@ -3,8 +3,9 @@ package rabbitmq
 import (
 	"context"
 	"math/rand"
-	"rpc"
 	"time"
+
+	"github.com/thantai574/rpc"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/streadway/amqp"

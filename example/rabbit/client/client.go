@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"rpc"
-	"rpc/example/rabbit/msg"
-	"rpc/logger"
-	"rpc/rabbitmq"
+
+	"github.com/thantai574/rpc"
+	"github.com/thantai574/rpc/example/rabbit/msg"
+	"github.com/thantai574/rpc/logger"
+	"github.com/thantai574/rpc/rabbitmq"
 )
 
 func main() {
