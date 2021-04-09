@@ -1,4 +1,4 @@
-module rpc
+module github.com/thantai574/rpc
 
 go 1.13
 
