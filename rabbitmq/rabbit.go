@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -86,7 +87,7 @@ func (this rabbit) Publish(ctx context.Context, request rpc.RequestMsgRPC) (err 
 	}
 
 	if request.HaveReply() {
-		msgs, _ := ch.Consume(
+		msgs, err_consume := ch.Consume(
 			q.Name, // queue
 			"",     // consumer
 			true,   // auto-ack
@@ -96,9 +97,9 @@ func (this rabbit) Publish(ctx context.Context, request rpc.RequestMsgRPC) (err 
 			nil,    // args
 		)
 
-		if err != nil {
+		if err_consume != nil {
 			this.log.Errorw("err-msg-rabbit", "err", err.Error())
-			return
+			return err_consume
 		}
 
 		select {
@@ -108,9 +109,9 @@ func (this rabbit) Publish(ctx context.Context, request rpc.RequestMsgRPC) (err 
 				proto.Unmarshal(d.Body, request.GetReplyMsg())
 				return
 			}
-		case <-time.After(time.Minute * 10):
+		case <-time.After(request.GetTimeout()):
 			this.log.Errorw("err-timeout-reply-rabbit")
-			return
+			return fmt.Errorf("Time Out ")
 		}
 	}
 

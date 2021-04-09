@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"context"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -30,6 +31,7 @@ type RabbitMsg struct {
 	Msg             proto.Message
 	ReplyMsg        proto.Message // Pointer
 	Reply           bool
+	Timeout         time.Duration
 }
 
 func (this RabbitMsg) GetExchange() string {
@@ -49,4 +51,8 @@ func (this RabbitMsg) GetMsg() proto.Message {
 }
 func (this RabbitMsg) GetReplyMsg() proto.Message {
 	return this.ReplyMsg
+}
+
+func (this RabbitMsg) GetTimeout() time.Duration {
+	return this.Timeout
 }

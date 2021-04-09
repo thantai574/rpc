@@ -1,4 +1,4 @@
-# Go RPC server
+# The RPC server uses the request-reply design pattern
 #### Introduction 
 RPC server implements server rabbitmq 
 
@@ -10,7 +10,7 @@ go get -u github.com/thantai574/rpc
 ```go
 import rpc "github.com/thantai574/rpc"
 ```
-##### Example Server RPC rabbitmq
+##### Example setups a server RPC that implements rabbitmq
 ```go
 package main
 
@@ -86,8 +86,9 @@ func main() {
 			Name:   "1",
 			Avatar: "2",
 		},
-		ReplyMsg: res,
-		Reply:    true,
+		ReplyMsg: res, // ReplyMsg 
+		Reply:    true, // to wait till has a msg 
+		Timeout:  time.Minute,
 	})
 
 	fmt.Print(res)

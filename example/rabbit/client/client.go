@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/thantai574/rpc"
 	"github.com/thantai574/rpc/example/rabbit/msg"
@@ -31,6 +32,7 @@ func main() {
 		},
 		ReplyMsg: res,
 		Reply:    true,
+		Timeout:  time.Minute,
 	})
 
 	fmt.Print(res)

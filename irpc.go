@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -18,6 +19,7 @@ type RequestMsgRPC interface {
 	GetMsg() proto.Message
 	GetReplyMsg() proto.Message
 	HaveReply() bool
+	GetTimeout() time.Duration
 }
 
 type Irpc interface {
